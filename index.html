@@ -366,7 +366,7 @@
           <label for="review">한줄평</label>
           <div class="inline">
             <input id="review" maxlength="100" autocomplete="off" placeholder="예) 국물이 시원하고 면이 쫄깃해요">
-            <button type="button" id="ai" class="ai">AI 추천</button>
+            <button type="button" id="ai" class="ai">AI 추천 리뷰</button>
           </div>
         </div>
       </div>
@@ -770,7 +770,7 @@ aiBtn.addEventListener('click', async () => {
     msgEl.textContent = err.message;
   } finally {
     aiBtn.disabled = false;
-    aiBtn.textContent = 'AI 추천';
+    aiBtn.textContent = 'AI 추천 리뷰';
   }
 });
 
