@@ -130,6 +130,33 @@
     border-radius: 8px;
   }
   .del:hover { color: var(--danger); border-color: var(--danger); }
+  .cm-toggle {
+    margin-top: 12px;
+    padding: 6px 0;
+    color: var(--accent-strong);
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: none;
+    border: 0;
+  }
+  .cm-box { margin-top: 8px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .cm-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+  .cm-item { margin: 0; padding: 8px 12px; font-size: 0.92rem; background: var(--bg); border-radius: 10px; word-break: break-word; }
+  .cm-none { margin: 0 0 10px; color: var(--muted); font-size: 0.9rem; }
+  .cm-form { display: flex; gap: 8px; }
+  .cm-form input { flex: 1; min-width: 0; margin-top: 0; }
+  .cm-form button {
+    flex: none;
+    min-height: 44px;
+    padding: 0 14px;
+    color: #fff;
+    font-weight: 700;
+    background: var(--accent-strong);
+    border: 0;
+    border-radius: 10px;
+  }
+  .cm-form button:hover { background: var(--accent-deep); }
+  .cm-msg { min-height: 1.2em; margin: 6px 0 0; color: var(--danger); font-size: 0.85rem; }
   .empty {
     margin: 0;
     padding: 28px 16px;
@@ -199,14 +226,14 @@
 // 공개용(publishable) 키라 화면에 둬도 된다. 서비스 롤 키는 절대 넣지 않는다.
 const SUPABASE_URL = 'https://lbaskywunnnvxjhmiuzf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_cvmU1m4Kov_9sHCHc3yNCQ_4-tAHNCC';
-const LIMIT = { name: 30, menu: 30, review: 100 };
+const LIMIT = { name: 30, menu: 30, review: 100, comment: 100 };
 const len = (s) => Array.from(s).length; // DB의 char_length와 같은 기준(글자 수)
 
 // 저장소: Supabase(PostgREST). id와 created_at은 DB가 만든다.
-async function api(path, options = {}) {
+async function api(table, path, options = {}) {
   let res;
   try {
-    res = await fetch(`${SUPABASE_URL}/rest/v1/restaurants${path}`, {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${path}`, {
       ...options,
       headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...options.headers },
     });
@@ -219,16 +246,32 @@ async function api(path, options = {}) {
 
 const store = {
   async list() {
-    const res = await api('?select=*&order=created_at.desc');
+    const res = await api('restaurants', '?select=*&order=created_at.desc');
     return res.json();
   },
   async add(item) {
-    await api('', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(item) });
+    await api('restaurants', '', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(item) });
   },
   async remove(id) {
-    await api(`?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+    await api('restaurants', `?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }); // 댓글은 DB에서 함께 지워진다
   },
 };
+
+const commentStore = {
+  async list() {
+    const res = await api('comments', '?select=*&order=created_at.asc');
+    return res.json();
+  },
+  async add(restaurantId, body) {
+    await api('comments', '', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ restaurant_id: restaurantId, body }),
+    });
+  },
+};
+
+const openComments = new Set(); // 펼쳐 둔 카드 id. 목록을 다시 그려도 유지한다.
 
 const $ = (id) => document.getElementById(id);
 const form = $('form');
@@ -248,7 +291,64 @@ function el(tag, className, text) {
   return node;
 }
 
-function renderCard(r) {
+function renderComments(r, comments) {
+  const wrap = el('div');
+
+  const toggle = el('button', 'cm-toggle', `댓글 ${comments.length}개`);
+  toggle.type = 'button';
+  const box = el('div', 'cm-box');
+  const open = openComments.has(r.id);
+  box.hidden = !open;
+  toggle.setAttribute('aria-expanded', String(open));
+  toggle.addEventListener('click', () => {
+    box.hidden = !box.hidden;
+    toggle.setAttribute('aria-expanded', String(!box.hidden));
+    if (box.hidden) openComments.delete(r.id);
+    else openComments.add(r.id);
+  });
+
+  if (comments.length) {
+    const ul = el('ul', 'cm-list');
+    ul.append(...comments.map((c) => el('li', 'cm-item', c.body)));
+    box.append(ul);
+  } else {
+    box.append(el('p', 'cm-none', '아직 댓글이 없어요.'));
+  }
+
+  const form = el('form', 'cm-form');
+  const input = el('input');
+  input.maxLength = LIMIT.comment;
+  input.placeholder = '댓글을 남겨 보세요';
+  input.autocomplete = 'off';
+  input.setAttribute('aria-label', `${r.name} 댓글`);
+  const send = el('button', undefined, '등록');
+  send.type = 'submit';
+  form.append(input, send);
+  const msg = el('p', 'cm-msg');
+  msg.setAttribute('role', 'alert');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = input.value.trim();
+    if (!body) return void (msg.textContent = '댓글을 입력해 주세요.');
+    if (len(body) > LIMIT.comment) return void (msg.textContent = `댓글은 ${LIMIT.comment}자 이하로 써 주세요.`);
+    send.disabled = true;
+    try {
+      await commentStore.add(r.id, body);
+      openComments.add(r.id);
+      await refresh();
+    } catch (err) {
+      msg.textContent = err.message;
+      send.disabled = false;
+    }
+  });
+
+  box.append(form, msg);
+  wrap.append(toggle, box);
+  return wrap;
+}
+
+function renderCard(r, comments = []) {
   const rating = Math.min(5, Math.max(1, r.rating));
   const li = el('li', 'card');
 
@@ -276,12 +376,16 @@ function renderCard(r) {
   li.append(top);
   if (r.menu) li.append(el('span', 'menu', r.menu));
   if (r.review) li.append(el('p', 'review', r.review));
+  li.append(renderComments(r, comments));
   return li;
 }
 
 async function refresh() {
-  const items = await store.list();
-  listEl.replaceChildren(...items.map(renderCard));
+  // 댓글을 못 불러와도 맛집 목록은 보여 준다.
+  const [items, comments] = await Promise.all([store.list(), commentStore.list().catch(() => [])]);
+  const byRestaurant = new Map();
+  for (const c of comments) byRestaurant.set(c.restaurant_id, [...(byRestaurant.get(c.restaurant_id) || []), c]);
+  listEl.replaceChildren(...items.map((r) => renderCard(r, byRestaurant.get(r.id) || [])));
   emptyEl.hidden = items.length > 0;
   countEl.textContent = items.length ? `${items.length}곳` : '';
 }
