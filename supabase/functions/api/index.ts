@@ -168,7 +168,7 @@ async function handle(input: Record<string, unknown>) {
 
     case 'list': {
       const [restaurants, comments, counts, mine] = await Promise.all([
-        db.from('restaurants').select('*').order('created_at', { ascending: false }),
+        db.from('restaurants').select('*, members(username)').order('created_at', { ascending: false }),
         db.from('comments').select('*').order('created_at', { ascending: true }),
         db.from('reaction_counts').select('*'),
         db.from('reactions').select('restaurant_id, kind').eq('member_id', me.id),
@@ -176,7 +176,12 @@ async function handle(input: Record<string, unknown>) {
       for (const r of [restaurants, comments, counts, mine]) if (r.error) throw r.error;
       const myVotes: Record<string, string> = {};
       for (const v of mine.data!) myVotes[v.restaurant_id] = v.kind;
-      return { restaurants: restaurants.data, comments: comments.data, counts: counts.data, myVotes };
+      // 작성자 아이디를 카드에 붙인다. 작성자 기록이 없는 예전 카드는 author가 null이다.
+      const list = restaurants.data!.map(({ members, member_id: _memberId, ...r }) => ({
+        ...r,
+        author: (Array.isArray(members) ? members[0] : members)?.username ?? null,
+      }));
+      return { restaurants: list, comments: comments.data, counts: counts.data, myVotes };
     }
 
     case 'add_restaurant': {
@@ -189,7 +194,9 @@ async function handle(input: Record<string, unknown>) {
       if (len(menu) > 30) fail(400, '메뉴는 30자 이하로 써 주세요.');
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) fail(400, '별점을 선택해 주세요.');
       if (len(review) > 100) fail(400, '한줄평은 100자 이하로 써 주세요.');
-      const { error } = await db.from('restaurants').insert({ name, menu: menu || null, rating, review: review || null });
+      const { error } = await db
+        .from('restaurants')
+        .insert({ name, menu: menu || null, rating, review: review || null, member_id: me.id });
       if (error) throw error;
       return { ok: true };
     }

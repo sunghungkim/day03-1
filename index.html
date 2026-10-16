@@ -141,6 +141,7 @@
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .card-name { margin: 0; font-size: 1.1rem; word-break: break-word; }
   .stars { display: block; margin-top: 2px; color: var(--accent); letter-spacing: 2px; }
+  .by { display: block; margin-top: 2px; color: var(--accent-deep); font-size: 0.85rem; font-weight: 600; word-break: break-all; }
   .when { display: block; margin-top: 2px; color: var(--muted); font-size: 0.8rem; }
   .menu {
     display: inline-block;
@@ -595,6 +596,7 @@ function renderCard(r, comments, count) {
   stars.setAttribute('role', 'img');
   stars.setAttribute('aria-label', `별점 ${rating}점`);
   info.append(stars);
+  if (r.author) info.append(el('span', 'by', `작성자 ${r.author}`));
   const when = formatWhen(r.created_at);
   if (when) {
     const t = el('time', 'when', when);
