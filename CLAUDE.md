@@ -32,6 +32,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NOL 디자인을 따릅니다(PRD.md 10장). 색은 `index.html` 맨 위 `:root`의 변수로 정리돼 있으니 값을 직접 쓰지 말고 변수를 쓰세요. 파란색은 버튼·선택·포커스에만 쓰고, 선택된 탭은 어두운 알약이며, 그림자는 쓰지 않습니다. 글꼴 Pretendard는 jsdelivr CDN에서 불러옵니다(빌드 없이 쓰기 위해).
 
+목록은 정사각형 타일(`renderTile`, `.card`)이고, 전체 내용·반응·댓글·삭제는 눌렀을 때 열리는 `<dialog id="detailDialog">`(`renderDetail`)에 있습니다. `refresh()`가 열려 있는 창도 다시 그립니다. 한 페이지에 6개씩 나누는 것은 브라우저에서만 합니다(`PAGE_SIZE`, `renderList`, `renderPager`). 서버 `list`는 전부 내려보냅니다. 타일에 내용을 더 넣을 때는 정사각형이 깨지지 않게 줄 수를 제한하세요.
+
 ## 범위 밖
 
 수정 기능, 사진 업로드, 검색, 회원 탈퇴·삭제, 이메일 인증, 소셜 로그인은 일부러 뺐습니다. 추가하지 마세요.
