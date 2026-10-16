@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 현황
 
-우리 동네 숨은 맛집을 기록하고 동네 사람들과 함께 보는 한국어 웹앱입니다. 1~2단계가 끝나 `index.html`이 Supabase(프로젝트 `day03-1`, 표 `restaurants`)에 저장합니다. 3단계(AI 한줄평)부터 남았습니다.
+우리 동네 숨은 맛집을 기록하고 동네 사람들과 함께 보는 한국어 웹앱입니다. 회원가입·로그인한 사람만 쓸 수 있고, 데이터는 Supabase(프로젝트 `day03-1`)에 있습니다. STEPS.md의 1~3단계와 추가 기능(댓글, 좋아요·싫어요, 날짜 표시, 로그인·관리자 모드)이 끝났고, 4단계(배포)가 남았습니다.
 
 - `PRD.md`가 요구사항, 데이터 규칙, 권한, 완료 기준의 기준 문서입니다.
-- `STEPS.md`가 만드는 순서입니다: 맛집 기록(localStorage) → Supabase 저장 → AI 한줄평 → 배포. 한 단계를 끝내고 확인한 뒤 다음 단계로 가고, 단계마다 커밋합니다.
+- `STEPS.md`는 처음 계획한 4단계(맛집 기록 → Supabase 저장 → AI 한줄평 → 배포)입니다. 그 뒤에 더한 기능은 PRD.md에만 있습니다.
 - 두 문서는 한국어로 쓰여 있으므로 한국어로 유지합니다.
 - PDF 4개(`Openrouter-메뉴얼`, `Supabase-메뉴얼`, `Vercel-매뉴얼`, `3일차-바이브코딩웹-연습`)는 수업 참고 자료입니다. 아직 읽지 않았습니다. 글자를 뽑으려면 이 PC에 없는 도구(Python, poppler)가 필요합니다.
 
@@ -15,22 +15,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 의도적으로 없습니다. 앱은 HTML·CSS·JS를 안에 담은 `index.html` 하나이고, npm이나 번들러, 빌드 과정을 쓰지 않습니다. `package.json`이나 빌드 파이프라인을 추가하지 마세요. Vercel은 저장소 루트를 정적 사이트로 서비스합니다.
 
+`index.html`을 파일로 바로 열면 미리보기 창에서 localStorage가 막힙니다. 화면을 확인할 때는 `http://localhost`로 띄우세요.
+
 ## 구조
 
-- **한 페이지, 한 파일.** 위에 입력 폼, 아래에 맛집 카드 목록이 있고, 새 기록이 맨 위에 옵니다(`created_at` 내림차순).
-- **저장소는 겹치지 않고 교체합니다.** 1단계는 localStorage를 쓰고, 2단계에서 Supabase로 바꿉니다. 두 곳의 필드 이름(`name`, `menu`, `rating`, `review`, `created_at`)을 같게 유지해, 교체할 때 불러오기·저장·삭제 함수만 고치면 되게 합니다.
-- **Supabase 표 `restaurants`**는 새로 만들고 기존 표는 건드리지 않습니다. 글자 수·별점 제한은 폼과 표의 CHECK 제약 양쪽에서 막습니다. 세부 규칙은 PRD.md 7.2를 따릅니다.
-- **댓글은 별도 표 `comments`**(`restaurant_id`는 CASCADE 외래키)에 저장하고, 화면은 목록과 댓글을 한 번씩 불러와 카드별로 묶습니다. 조회·추가 정책만 있습니다. 세부는 PRD.md 7.3.
-- **좋아요·싫어요는 `reactions` 표에 한 줄씩 추가**하고(수정 정책이 없어 카운터 컬럼을 올릴 수 없기 때문), 화면은 개수를 모아 둔 뷰 `reaction_counts`를 읽습니다. 한 카드에 한 번은 localStorage(`myVotes`)로만 지킵니다. 세부는 PRD.md 7.4.
-- **RLS를 켜고 `restaurants`에는 조회·추가·삭제 정책만 둡니다.** 수정은 범위 밖이라 수정 정책이 없는 것은 의도한 것입니다. 접근은 로그인 없이 익명으로 합니다.
-- **AI 한줄평은 Supabase Edge Function 1개를 거칩니다.** `verify_jwt`는 꺼 둡니다(로그인이 없어서 의도한 것입니다). 브라우저는 이 함수만 호출하고, 함수가 `openrouter/free` 모델로 OpenRouter를 호출합니다. 결과는 한국어 한 문장, 40자 이내이며 한줄평 칸에 채워집니다. 자동으로 등록하지 않습니다. 함수는 입력 길이와 별점을 검사하고 CORS를 처리합니다.
-- **비밀 값.** OpenRouter 키는 Supabase 프로젝트 Secrets에 `openrouter_api_key`로만 두고, 사용자가 Supabase 대시보드에서 직접 넣습니다. `index.html`에는 Supabase URL과 공개용(anon/publishable) 키만 둘 수 있고, 서비스 롤 키는 절대 넣지 않습니다.
+- **브라우저는 Edge Function `api` 하나에만 말합니다.** `index.html`에는 함수 주소만 있고 DB 키가 없습니다. 함수(`supabase/functions/api/index.ts`)가 세션 토큰을 확인한 뒤 `service_role`로 DB를 읽고 씁니다. 동작(action)은 `signup`, `login`, `logout`, `me`, `list`, `add_restaurant`, `delete_restaurant`, `add_comment`, `react`, `suggest_review`, `admin_members`, `admin_reset_password`입니다.
+- **표에는 RLS 정책이 없습니다.** `anon`·`authenticated`에게 권한을 주지 않아서 `service_role`만 접근합니다. 표에 직접 접근하는 경로를 새로 열지 마세요. 권한 검사는 항상 함수에서 합니다.
+- **로그인은 직접 만든 방식입니다.** Supabase Auth는 6자 미만 비밀번호를 받지 않아 4자리 관리자 비밀번호를 쓸 수 없어서입니다. 비밀번호는 DB 함수(`app_signup`, `app_login`, `app_set_password`, pgcrypto bcrypt)로만 다루고 원문은 어디에도 저장·표시하지 않습니다. 세션 토큰은 SHA-256 해시만 `sessions`에 저장합니다. 비밀번호를 관리자에게 보여 주는 기능은 만들지 않기로 했습니다.
+- **표:** `restaurants`, `comments`, `reactions`(+ 뷰 `reaction_counts`), `members`, `sessions`. 글자 수·별점 제한은 화면, 함수, 표의 CHECK 제약 세 곳에서 막습니다. 세부 규칙은 PRD.md 7장입니다. `comments`·`reactions`는 `restaurants`에 CASCADE로 묶여 카드를 지우면 함께 지워지고, `reactions`는 (`restaurant_id`, `member_id`)가 유일합니다.
+- **관리자 계정(`0000`)은 마이그레이션이 아니라 SQL로 직접 넣었습니다.** 비밀번호가 저장소나 마이그레이션 기록에 남지 않게 하려는 것이니, 저장소에 넣지 마세요.
+- **AI 한줄평**은 `api`의 `suggest_review`가 `openrouter/free` 모델로 OpenRouter를 호출합니다. 결과는 한국어 한 문장, 40자 이내이며 한줄평 칸에만 채우고 자동 등록하지 않습니다.
+- **비밀 값.** OpenRouter 키는 Supabase 프로젝트 Secrets의 `openrouter_api_key`에만 있고, 사용자가 대시보드에서 직접 넣습니다. 서비스 롤 키는 함수 안에서만 쓰고 화면·저장소에는 절대 넣지 않습니다.
+- **함수 배포.** `supabase/functions/api/index.ts`를 고치면 Supabase에도 다시 배포해야 반영됩니다(`verify_jwt`는 끄고 배포). 옛 함수 `suggest-review`·`delete-restaurant`는 410만 돌려주는 빈 함수로 남아 있습니다.
 
 ## 범위 밖
 
-로그인, 수정, 사진 업로드, 검색은 일부러 뺐습니다. 추가하지 마세요.
+수정 기능, 사진 업로드, 검색, 회원 탈퇴·삭제, 이메일 인증, 소셜 로그인은 일부러 뺐습니다. 추가하지 마세요.
 
 ## 환경
 
 - Windows와 PowerShell을 씁니다. Git은 이 저장소를 초기화한 뒤 winget으로 설치했습니다. 그 전에 열어 둔 터미널은 PATH에 Git이 없을 수 있고, 전체 경로는 `C:\Program Files\Git\cmd\git.exe`입니다.
-- 첫 푸시 전에 PDF 4개를 GitHub 저장소에 둘지 `.gitignore`에 넣을지 정하세요(STEPS.md 4단계).
+- 푸시는 사용자의 GitHub 로그인이 필요해서 Bash/PowerShell 도구로는 안 되고, 터미널 패널(`run_in_terminal`)로 해야 합니다.
+- PDF 4개는 커밋하지 않았습니다. GitHub 저장소에 둘지 `.gitignore`에 넣을지는 아직 정하지 않았습니다.

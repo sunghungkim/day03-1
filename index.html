@@ -18,6 +18,7 @@
     --danger: #b42318;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0;
     background: var(--bg);
@@ -40,6 +41,7 @@
     border-radius: 14px;
     box-shadow: 0 2px 10px rgba(194, 65, 12, 0.06);
   }
+  .panel h2 { margin: 0 0 4px; font-size: 1.05rem; }
   .row { display: grid; gap: 12px; margin-bottom: 12px; }
   .row.two { grid-template-columns: 1fr 1fr; }
   label { display: block; font-size: 0.9rem; font-weight: 600; }
@@ -63,8 +65,11 @@
     outline-offset: 1px;
     border-color: var(--accent);
   }
+  .field + .field { margin-top: 12px; }
   .msg { min-height: 1.4em; margin: 4px 0 8px; color: var(--danger); font-size: 0.9rem; }
+  .msg.ok { color: #1a7f37; }
   button { font: inherit; cursor: pointer; }
+  button:disabled { cursor: default; }
   .primary {
     width: 100%;
     min-height: 48px;
@@ -74,7 +79,35 @@
     border: 0;
     border-radius: 10px;
   }
-  .primary:hover { background: var(--accent-deep); }
+  .primary:hover:not(:disabled) { background: var(--accent-deep); }
+  .primary:disabled { opacity: 0.6; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab {
+    flex: 1;
+    min-height: 44px;
+    color: var(--muted);
+    font-weight: 700;
+    background: #fff;
+    border: 1px solid #e3d3c3;
+    border-radius: 10px;
+  }
+  .tab.on { color: var(--accent-deep); background: var(--accent-soft); border-color: var(--accent); }
+  .hint { margin: 10px 0 0; color: var(--muted); font-size: 0.85rem; }
+
+  .userbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+  .userbar .who { flex: 1; min-width: 0; font-weight: 600; word-break: break-all; }
+  .badge { display: inline-block; margin-left: 6px; padding: 1px 8px; color: #fff; font-size: 0.75rem; background: var(--accent-strong); border-radius: 999px; }
+  .small {
+    min-height: 36px;
+    padding: 0 12px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    background: #fff;
+    border: 1px solid #e3d3c3;
+    border-radius: 8px;
+  }
+  .small:hover { color: var(--accent-deep); border-color: var(--accent); }
 
   .inline { display: flex; gap: 8px; }
   .inline input { flex: 1; min-width: 0; }
@@ -108,6 +141,7 @@
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .card-name { margin: 0; font-size: 1.1rem; word-break: break-word; }
   .stars { display: block; margin-top: 2px; color: var(--accent); letter-spacing: 2px; }
+  .when { display: block; margin-top: 2px; color: var(--muted); font-size: 0.8rem; }
   .menu {
     display: inline-block;
     margin-top: 8px;
@@ -130,7 +164,8 @@
     border-radius: 8px;
   }
   .del:hover { color: var(--danger); border-color: var(--danger); }
-  .react { display: flex; gap: 8px; margin-top: 12px; }
+
+  .react { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
   .react button {
     min-height: 36px;
     padding: 0 12px;
@@ -141,8 +176,9 @@
     border-radius: 999px;
   }
   .react button:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
-  .react button:disabled { cursor: default; opacity: 0.7; }
+  .react button:disabled { opacity: 0.7; }
   .react button.mine { opacity: 1; font-weight: 700; color: var(--accent-deep); background: var(--accent-soft); border-color: var(--accent); }
+
   .cm-toggle {
     margin-top: 12px;
     padding: 6px 0;
@@ -168,8 +204,29 @@
     border: 0;
     border-radius: 10px;
   }
-  .cm-form button:hover { background: var(--accent-deep); }
+  .cm-form button:hover:not(:disabled) { background: var(--accent-deep); }
   .cm-msg { min-height: 1.2em; margin: 6px 0 0; color: var(--danger); font-size: 0.85rem; }
+
+  .member { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .member .meta { color: var(--muted); font-size: 0.8rem; }
+
+  .dialog {
+    width: min(360px, calc(100vw - 32px));
+    padding: 20px;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--accent);
+    border-radius: 14px;
+  }
+  .dialog::backdrop { background: rgba(43, 33, 24, 0.45); }
+  .dialog h3 { margin: 0 0 6px; font-size: 1.1rem; }
+  .dialog p.desc, .panel p.desc { margin: 0 0 12px; color: var(--muted); font-size: 0.92rem; word-break: break-word; }
+  .dlg-actions { display: flex; gap: 8px; }
+  .dlg-actions button { min-height: 44px; flex: 1; border-radius: 10px; font-weight: 700; }
+  .dlg-actions .ghost { color: var(--muted); background: #fff; border: 1px solid #e3d3c3; }
+  .dlg-actions .primary { width: auto; }
+
   .empty {
     margin: 0;
     padding: 28px 16px;
@@ -193,141 +250,113 @@
     <p>가본 맛집을 기록하고 동네 사람들과 함께 봐요.</p>
   </header>
 
-  <form id="form" class="panel" novalidate>
-    <div class="row two">
-      <label>식당 이름 <span class="req">*</span>
-        <input id="name" maxlength="30" autocomplete="off" placeholder="예) 골목 칼국수">
-      </label>
-      <label>메뉴
-        <input id="menu" maxlength="30" autocomplete="off" placeholder="예) 바지락 칼국수">
-      </label>
+  <!-- 로그인 / 회원가입 -->
+  <section id="authView" hidden>
+    <div class="panel">
+      <div class="tabs">
+        <button type="button" id="tabLogin" class="tab on">로그인</button>
+        <button type="button" id="tabSignup" class="tab">회원가입</button>
+      </div>
+      <form id="authForm" novalidate>
+        <div class="field">
+          <label for="authId">아이디</label>
+          <input id="authId" maxlength="20" autocomplete="username" autocapitalize="off" placeholder="3~20자 (한글·영문·숫자·_)">
+        </div>
+        <div class="field">
+          <label for="authPw">비밀번호</label>
+          <input id="authPw" type="password" maxlength="50" autocomplete="current-password" placeholder="4자 이상">
+        </div>
+        <div class="field" id="confirmRow" hidden>
+          <label for="authPw2">비밀번호 확인</label>
+          <input id="authPw2" type="password" maxlength="50" autocomplete="new-password" placeholder="비밀번호를 한 번 더">
+        </div>
+        <p id="authMsg" class="msg" role="alert"></p>
+        <button type="submit" id="authBtn" class="primary">로그인</button>
+      </form>
+      <p class="hint">회원만 맛집을 보고 쓸 수 있어요. 처음이라면 회원가입을 눌러 주세요.</p>
     </div>
-    <div class="row">
-      <label>별점 <span class="req">*</span>
-        <select id="rating">
-          <option value="">별점 선택</option>
-          <option value="5">★★★★★ (5점)</option>
-          <option value="4">★★★★☆ (4점)</option>
-          <option value="3">★★★☆☆ (3점)</option>
-          <option value="2">★★☆☆☆ (2점)</option>
-          <option value="1">★☆☆☆☆ (1점)</option>
-        </select>
-      </label>
+  </section>
+
+  <!-- 로그인한 뒤의 화면 -->
+  <section id="appView" hidden>
+    <div class="userbar">
+      <span class="who" id="who"></span>
+      <button type="button" id="membersBtn" class="small" hidden>회원 목록</button>
+      <button type="button" id="logoutBtn" class="small">로그아웃</button>
     </div>
-    <div class="row">
-      <div>
-        <label for="review">한줄평</label>
-        <div class="inline">
-          <input id="review" maxlength="100" autocomplete="off" placeholder="예) 국물이 시원하고 면이 쫄깃해요">
-          <button type="button" id="ai" class="ai">AI 추천</button>
+
+    <section id="adminPanel" class="panel" hidden>
+      <h2>회원 목록 (관리자)</h2>
+      <p class="desc">비밀번호는 암호화되어 있어 아무도 볼 수 없어요. 비밀번호를 잊은 회원은 새 비밀번호로 바꿔 줄 수 있어요.</p>
+      <ul id="memberList" class="cm-list"></ul>
+      <p id="adminMsg" class="msg" role="alert"></p>
+    </section>
+
+    <form id="form" class="panel" novalidate>
+      <div class="row two">
+        <label>식당 이름 <span class="req">*</span>
+          <input id="name" maxlength="30" autocomplete="off" placeholder="예) 골목 칼국수">
+        </label>
+        <label>메뉴
+          <input id="menu" maxlength="30" autocomplete="off" placeholder="예) 바지락 칼국수">
+        </label>
+      </div>
+      <div class="row">
+        <label>별점 <span class="req">*</span>
+          <select id="rating">
+            <option value="">별점 선택</option>
+            <option value="5">★★★★★ (5점)</option>
+            <option value="4">★★★★☆ (4점)</option>
+            <option value="3">★★★☆☆ (3점)</option>
+            <option value="2">★★☆☆☆ (2점)</option>
+            <option value="1">★☆☆☆☆ (1점)</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <div>
+          <label for="review">한줄평</label>
+          <div class="inline">
+            <input id="review" maxlength="100" autocomplete="off" placeholder="예) 국물이 시원하고 면이 쫄깃해요">
+            <button type="button" id="ai" class="ai">AI 추천</button>
+          </div>
         </div>
       </div>
-    </div>
-    <p id="msg" class="msg" role="alert"></p>
-    <button type="submit" class="primary">추가</button>
-  </form>
+      <p id="msg" class="msg" role="alert"></p>
+      <button type="submit" class="primary">추가</button>
+    </form>
 
-  <div class="list-head">
-    <h2>등록된 맛집</h2>
-    <span id="count"></span>
-  </div>
-  <ul id="list" class="list"></ul>
-  <p id="empty" class="empty" hidden>아직 등록된 맛집이 없어요. 첫 맛집을 추가해 보세요!</p>
+    <div class="list-head">
+      <h2>등록된 맛집</h2>
+      <span id="count"></span>
+    </div>
+    <ul id="list" class="list"></ul>
+    <p id="empty" class="empty" hidden>아직 등록된 맛집이 없어요. 첫 맛집을 추가해 보세요!</p>
+  </section>
 </div>
 
+<dialog id="resetDialog" class="dialog" aria-labelledby="resetTitle">
+  <form id="resetForm" novalidate>
+    <h3 id="resetTitle">비밀번호 재설정</h3>
+    <p id="resetDesc" class="desc"></p>
+    <label for="resetPw">새 비밀번호</label>
+    <input id="resetPw" maxlength="50" autocomplete="off" placeholder="4자 이상">
+    <p id="resetMsg" class="msg" role="alert"></p>
+    <div class="dlg-actions">
+      <button type="button" id="resetCancel" class="ghost">취소</button>
+      <button type="submit" id="resetOk" class="primary">바꾸기</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
-// 공개용(publishable) 키라 화면에 둬도 된다. 서비스 롤 키는 절대 넣지 않는다.
-const SUPABASE_URL = 'https://lbaskywunnnvxjhmiuzf.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_cvmU1m4Kov_9sHCHc3yNCQ_4-tAHNCC';
+// 모든 요청은 로그인이 필요한 Edge Function(api) 하나로 간다. DB 키는 화면에 없다.
+const API_URL = 'https://lbaskywunnnvxjhmiuzf.supabase.co/functions/v1/api';
+const TOKEN_KEY = 'session';
 const LIMIT = { name: 30, menu: 30, review: 100, comment: 100 };
 const len = (s) => Array.from(s).length; // DB의 char_length와 같은 기준(글자 수)
 
-// 저장소: Supabase(PostgREST). id와 created_at은 DB가 만든다.
-async function api(table, path, options = {}) {
-  let res;
-  try {
-    res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${path}`, {
-      ...options,
-      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...options.headers },
-    });
-  } catch {
-    throw new Error('서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.');
-  }
-  if (!res.ok) throw new Error('요청을 처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.');
-  return res;
-}
-
-const store = {
-  async list() {
-    const res = await api('restaurants', '?select=*&order=created_at.desc');
-    return res.json();
-  },
-  async add(item) {
-    await api('restaurants', '', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(item) });
-  },
-  async remove(id) {
-    await api('restaurants', `?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }); // 댓글은 DB에서 함께 지워진다
-  },
-};
-
-const commentStore = {
-  async list() {
-    const res = await api('comments', '?select=*&order=created_at.asc');
-    return res.json();
-  },
-  async add(restaurantId, body) {
-    await api('comments', '', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ restaurant_id: restaurantId, body }),
-    });
-  },
-};
-
-const reactionStore = {
-  async counts() {
-    const res = await api('reaction_counts', '?select=*');
-    return res.json();
-  },
-  async add(restaurantId, kind) {
-    await api('reactions', '', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ restaurant_id: restaurantId, kind }),
-    });
-  },
-};
-
-// 로그인이 없어서 "한 카드에 한 번"은 이 브라우저에서만 지킨다(다른 브라우저에서는 또 누를 수 있다).
-const MY_VOTES_KEY = 'myVotes';
-function loadMyVotes() {
-  try {
-    return JSON.parse(localStorage.getItem(MY_VOTES_KEY)) || {};
-  } catch {
-    return {};
-  }
-}
-function saveMyVote(id, kind) {
-  try {
-    localStorage.setItem(MY_VOTES_KEY, JSON.stringify({ ...loadMyVotes(), [id]: kind }));
-  } catch {
-    /* 저장이 막힌 브라우저에서는 새로고침하면 다시 누를 수 있다 */
-  }
-}
-
-const openComments = new Set(); // 펼쳐 둔 카드 id. 목록을 다시 그려도 유지한다.
-
 const $ = (id) => document.getElementById(id);
-const form = $('form');
-const nameEl = $('name');
-const menuEl = $('menu');
-const ratingEl = $('rating');
-const reviewEl = $('review');
-const msgEl = $('msg');
-const listEl = $('list');
-const emptyEl = $('empty');
-const countEl = $('count');
-
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -335,8 +364,143 @@ function el(tag, className, text) {
   return node;
 }
 
+// ---------- 세션 ----------
+let token = '';
+try {
+  token = localStorage.getItem(TOKEN_KEY) || '';
+} catch {
+  /* 저장이 막힌 브라우저에서는 새로고침하면 다시 로그인해야 한다 */
+}
+let me = null; // { username, is_admin }
+let state = { restaurants: [], comments: [], counts: [], myVotes: {} };
+const openComments = new Set(); // 펼쳐 둔 카드 id. 목록을 다시 그려도 유지한다.
+
+function saveToken(value) {
+  token = value;
+  try {
+    if (value) localStorage.setItem(TOKEN_KEY, value);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* 무시 */
+  }
+}
+
+async function call(action, payload = {}) {
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, token, ...payload }),
+    });
+  } catch {
+    throw new Error('서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && token && action !== 'login' && action !== 'signup') {
+    endSession('로그인 시간이 지났어요. 다시 로그인해 주세요.');
+    throw new Error(data.error || '다시 로그인해 주세요.');
+  }
+  if (!res.ok) throw new Error(data.error || '요청을 처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+  return data;
+}
+
+// ---------- 화면 전환 ----------
+const authView = $('authView');
+const appView = $('appView');
+const authMsg = $('authMsg');
+
+function showAuth(message = '') {
+  appView.hidden = true;
+  authView.hidden = false;
+  authMsg.textContent = message;
+  $('authPw').value = '';
+  $('authPw2').value = '';
+}
+
+function showApp() {
+  authView.hidden = true;
+  appView.hidden = false;
+  const who = $('who');
+  who.textContent = `${me.username} 님`;
+  if (me.is_admin) who.append(el('span', 'badge', '관리자'));
+  $('membersBtn').hidden = !me.is_admin;
+  $('adminPanel').hidden = true;
+}
+
+function endSession(message) {
+  saveToken('');
+  me = null;
+  state = { restaurants: [], comments: [], counts: [], myVotes: {} };
+  openComments.clear();
+  showAuth(message);
+}
+
+// ---------- 로그인 / 회원가입 ----------
+let mode = 'login';
+function setMode(next) {
+  mode = next;
+  $('tabLogin').classList.toggle('on', next === 'login');
+  $('tabSignup').classList.toggle('on', next === 'signup');
+  $('confirmRow').hidden = next !== 'signup';
+  $('authBtn').textContent = next === 'signup' ? '회원가입' : '로그인';
+  $('authPw').autocomplete = next === 'signup' ? 'new-password' : 'current-password';
+  authMsg.textContent = '';
+}
+$('tabLogin').addEventListener('click', () => setMode('login'));
+$('tabSignup').addEventListener('click', () => setMode('signup'));
+
+$('authForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = $('authId').value.trim();
+  const password = $('authPw').value;
+  if (!username) return void (authMsg.textContent = '아이디를 입력해 주세요.');
+  if (!password) return void (authMsg.textContent = '비밀번호를 입력해 주세요.');
+  if (mode === 'signup') {
+    if (len(password) < 4) return void (authMsg.textContent = '비밀번호는 4자 이상으로 입력해 주세요.');
+    if (password !== $('authPw2').value) return void (authMsg.textContent = '비밀번호가 서로 달라요. 다시 확인해 주세요.');
+  }
+
+  const btn = $('authBtn');
+  btn.disabled = true;
+  try {
+    const res = await call(mode, { username, password });
+    saveToken(res.token);
+    me = { username: res.username, is_admin: res.is_admin };
+    $('authId').value = '';
+    $('authPw').value = '';
+    $('authPw2').value = '';
+    authMsg.textContent = '';
+    showApp();
+    await refresh();
+  } catch (err) {
+    authMsg.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$('logoutBtn').addEventListener('click', async () => {
+  call('logout').catch(() => {});
+  endSession('');
+  setMode('login');
+});
+
+// ---------- 맛집 목록 ----------
+const listEl = $('list');
+const emptyEl = $('empty');
+const countEl = $('count');
+const msgEl = $('msg');
+
+// 등록한 날짜와 시간을 이 브라우저의 시간대로 보여 준다. 예) 2026. 10. 16. 오후 3:07
+function formatWhen(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
 function renderReactions(r, count) {
-  const mine = loadMyVotes()[r.id];
+  const mine = state.myVotes[r.id];
   const box = el('div', 'react');
   const msg = el('span', 'cm-msg');
   msg.setAttribute('role', 'alert');
@@ -349,12 +513,11 @@ function renderReactions(r, count) {
     b.addEventListener('click', async () => {
       box.querySelectorAll('button').forEach((x) => (x.disabled = true));
       try {
-        await reactionStore.add(r.id, kind);
-        saveMyVote(r.id, kind);
+        await call('react', { restaurant_id: r.id, kind });
         await refresh();
       } catch (err) {
         msg.textContent = err.message;
-        box.querySelectorAll('button').forEach((x) => (x.disabled = false));
+        await refresh().catch(() => {});
       }
     });
     return b;
@@ -407,7 +570,7 @@ function renderComments(r, comments) {
     if (len(body) > LIMIT.comment) return void (msg.textContent = `댓글은 ${LIMIT.comment}자 이하로 써 주세요.`);
     send.disabled = true;
     try {
-      await commentStore.add(r.id, body);
+      await call('add_comment', { restaurant_id: r.id, body });
       openComments.add(r.id);
       await refresh();
     } catch (err) {
@@ -421,7 +584,7 @@ function renderComments(r, comments) {
   return wrap;
 }
 
-function renderCard(r, comments = [], count = { likes: 0, dislikes: 0 }) {
+function renderCard(r, comments, count) {
   const rating = Math.min(5, Math.max(1, r.rating));
   const li = el('li', 'card');
 
@@ -432,20 +595,31 @@ function renderCard(r, comments = [], count = { likes: 0, dislikes: 0 }) {
   stars.setAttribute('role', 'img');
   stars.setAttribute('aria-label', `별점 ${rating}점`);
   info.append(stars);
+  const when = formatWhen(r.created_at);
+  if (when) {
+    const t = el('time', 'when', when);
+    t.dateTime = r.created_at;
+    info.append(t);
+  }
+  top.append(info);
 
-  const del = el('button', 'del', '삭제');
-  del.type = 'button';
-  del.setAttribute('aria-label', `${r.name} 삭제`);
-  del.addEventListener('click', async () => {
-    try {
-      await store.remove(r.id);
-      await refresh();
-    } catch (err) {
-      msgEl.textContent = err.message;
-    }
-  });
+  // 삭제는 관리자만 할 수 있다(서버도 다시 확인한다).
+  if (me.is_admin) {
+    const del = el('button', 'del', '삭제');
+    del.type = 'button';
+    del.setAttribute('aria-label', `${r.name} 삭제`);
+    del.addEventListener('click', async () => {
+      if (!confirm(`"${r.name}" 카드를 삭제할까요?\n댓글과 좋아요도 함께 지워져요.`)) return;
+      try {
+        await call('delete_restaurant', { id: r.id });
+        await refresh();
+      } catch (err) {
+        msgEl.textContent = err.message;
+      }
+    });
+    top.append(del);
+  }
 
-  top.append(info, del);
   li.append(top);
   if (r.menu) li.append(el('span', 'menu', r.menu));
   if (r.review) li.append(el('p', 'review', r.review));
@@ -454,21 +628,23 @@ function renderCard(r, comments = [], count = { likes: 0, dislikes: 0 }) {
 }
 
 async function refresh() {
-  // 댓글·좋아요를 못 불러와도 맛집 목록은 보여 준다.
-  const [items, comments, counts] = await Promise.all([
-    store.list(),
-    commentStore.list().catch(() => []),
-    reactionStore.counts().catch(() => []),
-  ]);
-  const byRestaurant = new Map();
-  for (const c of comments) byRestaurant.set(c.restaurant_id, [...(byRestaurant.get(c.restaurant_id) || []), c]);
-  const countById = new Map(counts.map((c) => [c.restaurant_id, { likes: Number(c.likes), dislikes: Number(c.dislikes) }]));
+  state = await call('list');
+  const commentsBy = new Map();
+  for (const c of state.comments) commentsBy.set(c.restaurant_id, [...(commentsBy.get(c.restaurant_id) || []), c]);
+  const countBy = new Map(state.counts.map((c) => [c.restaurant_id, { likes: Number(c.likes), dislikes: Number(c.dislikes) }]));
   listEl.replaceChildren(
-    ...items.map((r) => renderCard(r, byRestaurant.get(r.id) || [], countById.get(r.id) || { likes: 0, dislikes: 0 })),
+    ...state.restaurants.map((r) => renderCard(r, commentsBy.get(r.id) || [], countBy.get(r.id) || { likes: 0, dislikes: 0 })),
   );
-  emptyEl.hidden = items.length > 0;
-  countEl.textContent = items.length ? `${items.length}곳` : '';
+  emptyEl.hidden = state.restaurants.length > 0;
+  countEl.textContent = state.restaurants.length ? `${state.restaurants.length}곳` : '';
 }
+
+// ---------- 맛집 추가 / AI 추천 ----------
+const form = $('form');
+const nameEl = $('name');
+const menuEl = $('menu');
+const ratingEl = $('rating');
+const reviewEl = $('review');
 
 function fail(message, field) {
   msgEl.textContent = message;
@@ -489,7 +665,7 @@ form.addEventListener('submit', async (e) => {
   if (len(review) > LIMIT.review) return fail(`한줄평은 ${LIMIT.review}자 이하로 써 주세요.`, reviewEl);
 
   try {
-    await store.add({ name, menu: menu || null, rating, review: review || null });
+    await call('add_restaurant', { name, menu, rating, review });
     form.reset();
     msgEl.textContent = '';
     nameEl.focus();
@@ -499,7 +675,6 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// AI 한줄평 추천: Edge Function만 호출한다(OpenRouter 키는 서버 Secrets에만 있다).
 const aiBtn = $('ai');
 aiBtn.addEventListener('click', async () => {
   const name = nameEl.value.trim();
@@ -512,26 +687,99 @@ aiBtn.addEventListener('click', async () => {
   aiBtn.disabled = true;
   aiBtn.textContent = '생각 중…';
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/suggest-review`, {
-      method: 'POST',
-      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, menu, rating: ratingEl.value ? Number(ratingEl.value) : null }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.review) throw new Error(data.error || 'AI 추천을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.');
-    reviewEl.value = data.review;
+    const res = await call('suggest_review', { name, menu, rating: ratingEl.value ? Number(ratingEl.value) : null });
+    if (!res.review) throw new Error('AI 추천을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+    reviewEl.value = res.review;
     reviewEl.focus();
   } catch (err) {
-    msgEl.textContent = err instanceof TypeError ? '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.' : err.message;
+    msgEl.textContent = err.message;
   } finally {
     aiBtn.disabled = false;
     aiBtn.textContent = 'AI 추천';
   }
 });
 
-refresh().catch((err) => {
-  msgEl.textContent = err.message;
+// ---------- 관리자: 회원 목록 ----------
+const adminPanel = $('adminPanel');
+const adminMsg = $('adminMsg');
+const resetDialog = $('resetDialog');
+const resetPw = $('resetPw');
+let resetTarget = null;
+
+async function loadMembers() {
+  adminMsg.textContent = '';
+  adminMsg.classList.remove('ok');
+  try {
+    const { members } = await call('admin_members');
+    $('memberList').replaceChildren(
+      ...members.map((m) => {
+        const li = el('li', 'cm-item member');
+        const left = el('div');
+        left.append(el('strong', undefined, m.username));
+        if (m.is_admin) left.append(el('span', 'badge', '관리자'));
+        left.append(el('div', 'meta', `가입 ${formatWhen(m.created_at)}`));
+        const btn = el('button', 'small', '비밀번호 재설정');
+        btn.type = 'button';
+        btn.addEventListener('click', () => {
+          resetTarget = m;
+          $('resetDesc').textContent = `"${m.username}" 회원의 새 비밀번호를 정해 주세요. 바꾼 뒤 회원에게 직접 알려 주세요.`;
+          resetPw.value = '';
+          $('resetMsg').textContent = '';
+          resetDialog.showModal();
+          resetPw.focus();
+        });
+        li.append(left, btn);
+        return li;
+      }),
+    );
+  } catch (err) {
+    adminMsg.textContent = err.message;
+  }
+}
+
+$('membersBtn').addEventListener('click', async () => {
+  adminPanel.hidden = !adminPanel.hidden;
+  if (!adminPanel.hidden) await loadMembers();
 });
+
+$('resetCancel').addEventListener('click', () => resetDialog.close());
+resetDialog.addEventListener('close', () => {
+  resetPw.value = '';
+  resetTarget = null;
+});
+
+$('resetForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!resetTarget) return;
+  const password = resetPw.value;
+  if (len(password) < 4) return void ($('resetMsg').textContent = '비밀번호는 4자 이상으로 입력해 주세요.');
+  const btn = $('resetOk');
+  btn.disabled = true;
+  try {
+    await call('admin_reset_password', { member_id: resetTarget.id, password });
+    const name = resetTarget.username;
+    resetDialog.close();
+    adminMsg.classList.add('ok');
+    adminMsg.textContent = `"${name}" 회원의 비밀번호를 바꿨어요.`;
+  } catch (err) {
+    $('resetMsg').textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------- 시작 ----------
+(async () => {
+  if (!token) return showAuth();
+  try {
+    me = await call('me');
+    showApp();
+    await refresh();
+  } catch (err) {
+    if (!me) showAuth(err.message);
+    else msgEl.textContent = err.message;
+  }
+})();
 </script>
 </body>
 </html>
