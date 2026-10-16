@@ -187,16 +187,18 @@ async function handle(input: Record<string, unknown>) {
     case 'add_restaurant': {
       const name = str(input.name).trim();
       const menu = str(input.menu).trim();
+      const location = str(input.location).trim();
       const review = str(input.review).trim();
       const rating = Number(input.rating);
       if (!name) fail(400, '식당 이름을 입력해 주세요.');
       if (len(name) > 30) fail(400, '식당 이름은 30자 이하로 써 주세요.');
       if (len(menu) > 30) fail(400, '메뉴는 30자 이하로 써 주세요.');
+      if (len(location) > 50) fail(400, '위치는 50자 이하로 써 주세요.');
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) fail(400, '별점을 선택해 주세요.');
       if (len(review) > 100) fail(400, '한줄평은 100자 이하로 써 주세요.');
       const { error } = await db
         .from('restaurants')
-        .insert({ name, menu: menu || null, rating, review: review || null, member_id: me.id });
+        .insert({ name, menu: menu || null, location: location || null, rating, review: review || null, member_id: me.id });
       if (error) throw error;
       return { ok: true };
     }

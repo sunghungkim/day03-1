@@ -181,10 +181,10 @@
   .card {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     min-width: 0;
     aspect-ratio: 1 / 1;
-    padding: 12px;
+    padding: 10px;
     overflow: hidden;
     background: #fff;
     cursor: pointer;
@@ -218,18 +218,23 @@
     background: var(--primary-tint);
     border-radius: 6px;
   }
+  .sq-loc { color: var(--text-2); font-size: 11px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .loc { margin: 8px 0 0; color: var(--text-2); font-size: 13px; word-break: break-word; }
   .sq-review {
     flex: 1 1 0;
     min-height: 0;
     margin: 0;
     color: var(--text-2);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.4;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     word-break: break-word;
+  }
+  @media (min-width: 601px) {
+    .sq-review { font-size: 12px; -webkit-line-clamp: 3; }
   }
   .sq-foot { margin-top: auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .sq-meta { color: var(--text-3); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -437,6 +442,11 @@
         </label>
       </div>
       <div class="row">
+        <label>위치
+          <input id="location" maxlength="50" autocomplete="off" placeholder="예) 서울 마포구 합정동">
+        </label>
+      </div>
+      <div class="row">
         <label>별점 <span class="req">*</span>
           <select id="rating">
             <option value="">별점 선택</option>
@@ -494,7 +504,7 @@
 // 모든 요청은 로그인이 필요한 Edge Function(api) 하나로 간다. DB 키는 화면에 없다.
 const API_URL = 'https://lbaskywunnnvxjhmiuzf.supabase.co/functions/v1/api';
 const TOKEN_KEY = 'session';
-const LIMIT = { name: 30, menu: 30, review: 100, comment: 100 };
+const LIMIT = { name: 30, menu: 30, location: 50, review: 100, comment: 100 };
 const len = (s) => Array.from(s).length; // DB의 char_length와 같은 기준(글자 수)
 
 const $ = (id) => document.getElementById(id);
@@ -794,6 +804,7 @@ function renderDetail(r, comments, count) {
 
   li.append(top);
   if (r.menu) li.append(el('span', 'menu', r.menu));
+  if (r.location) li.append(el('p', 'loc', `📍 ${r.location}`));
   if (r.review) li.append(el('p', 'review', r.review));
   li.append(renderReactions(r, count), renderComments(r, comments));
   return li;
@@ -812,6 +823,7 @@ function renderTile(r, comments, count) {
   stars.setAttribute('aria-label', `별점 ${rating}점`);
   li.append(stars);
   if (r.menu) li.append(el('span', 'sq-menu', r.menu));
+  if (r.location) li.append(el('span', 'sq-loc', `📍 ${r.location}`));
   li.append(el('p', 'sq-review', r.review || ''));
 
   const foot = el('div', 'sq-foot');
@@ -917,6 +929,7 @@ async function refresh() {
 const form = $('form');
 const nameEl = $('name');
 const menuEl = $('menu');
+const locationEl = $('location');
 const ratingEl = $('rating');
 const reviewEl = $('review');
 
@@ -929,17 +942,19 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = nameEl.value.trim();
   const menu = menuEl.value.trim();
+  const location = locationEl.value.trim();
   const review = reviewEl.value.trim();
   const rating = Number(ratingEl.value);
 
   if (!name) return fail('식당 이름을 입력해 주세요.', nameEl);
   if (len(name) > LIMIT.name) return fail(`식당 이름은 ${LIMIT.name}자 이하로 써 주세요.`, nameEl);
   if (len(menu) > LIMIT.menu) return fail(`메뉴는 ${LIMIT.menu}자 이하로 써 주세요.`, menuEl);
+  if (len(location) > LIMIT.location) return fail(`위치는 ${LIMIT.location}자 이하로 써 주세요.`, locationEl);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return fail('별점을 선택해 주세요.', ratingEl);
   if (len(review) > LIMIT.review) return fail(`한줄평은 ${LIMIT.review}자 이하로 써 주세요.`, reviewEl);
 
   try {
-    await call('add_restaurant', { name, menu, rating, review });
+    await call('add_restaurant', { name, menu, location, rating, review });
     form.reset();
     msgEl.textContent = '';
     nameEl.focus();
