@@ -28,6 +28,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **비밀 값.** OpenRouter 키는 Supabase 프로젝트 Secrets의 `openrouter_api_key`에만 있고, 사용자가 대시보드에서 직접 넣습니다. 서비스 롤 키는 함수 안에서만 쓰고 화면·저장소에는 절대 넣지 않습니다.
 - **함수 배포.** `supabase/functions/api/index.ts`를 고치면 Supabase에도 다시 배포해야 반영됩니다(`verify_jwt`는 끄고 배포). 옛 함수 `suggest-review`·`delete-restaurant`는 410만 돌려주는 빈 함수로 남아 있습니다.
 
+## 디자인
+
+NOL 디자인을 따릅니다(PRD.md 10장). 색은 `index.html` 맨 위 `:root`의 변수로 정리돼 있으니 값을 직접 쓰지 말고 변수를 쓰세요. 파란색은 버튼·선택·포커스에만 쓰고, 선택된 탭은 어두운 알약이며, 그림자는 쓰지 않습니다. 글꼴 Pretendard는 jsdelivr CDN에서 불러옵니다(빌드 없이 쓰기 위해).
+
 ## 범위 밖
 
 수정 기능, 사진 업로드, 검색, 회원 탈퇴·삭제, 이메일 인증, 소셜 로그인은 일부러 뺐습니다. 추가하지 마세요.
