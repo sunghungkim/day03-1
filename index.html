@@ -76,6 +76,23 @@
   }
   .primary:hover { background: var(--accent-deep); }
 
+  .inline { display: flex; gap: 8px; }
+  .inline input { flex: 1; min-width: 0; }
+  .ai {
+    flex: none;
+    min-height: 44px;
+    margin-top: 6px;
+    padding: 0 14px;
+    color: var(--accent-strong);
+    font-weight: 700;
+    white-space: nowrap;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+  }
+  .ai:hover:not(:disabled) { background: #ffe3cc; }
+  .ai:disabled { opacity: 0.6; cursor: wait; }
+
   .list-head { display: flex; align-items: baseline; gap: 8px; margin: 32px 0 12px; }
   .list-head h2 { margin: 0; font-size: 1.15rem; }
   .list-head span { color: var(--muted); font-size: 0.9rem; }
@@ -158,9 +175,13 @@
       </label>
     </div>
     <div class="row">
-      <label>한줄평
-        <input id="review" maxlength="100" autocomplete="off" placeholder="예) 국물이 시원하고 면이 쫄깃해요">
-      </label>
+      <div>
+        <label for="review">한줄평</label>
+        <div class="inline">
+          <input id="review" maxlength="100" autocomplete="off" placeholder="예) 국물이 시원하고 면이 쫄깃해요">
+          <button type="button" id="ai" class="ai">AI 추천</button>
+        </div>
+      </div>
     </div>
     <p id="msg" class="msg" role="alert"></p>
     <button type="submit" class="primary">추가</button>
@@ -291,6 +312,36 @@ form.addEventListener('submit', async (e) => {
     await refresh();
   } catch (err) {
     msgEl.textContent = err.message;
+  }
+});
+
+// AI 한줄평 추천: Edge Function만 호출한다(OpenRouter 키는 서버 Secrets에만 있다).
+const aiBtn = $('ai');
+aiBtn.addEventListener('click', async () => {
+  const name = nameEl.value.trim();
+  const menu = menuEl.value.trim();
+  if (!name) return fail('AI 추천을 받으려면 식당 이름을 먼저 입력해 주세요.', nameEl);
+  if (len(name) > LIMIT.name) return fail(`식당 이름은 ${LIMIT.name}자 이하로 써 주세요.`, nameEl);
+  if (len(menu) > LIMIT.menu) return fail(`메뉴는 ${LIMIT.menu}자 이하로 써 주세요.`, menuEl);
+
+  msgEl.textContent = '';
+  aiBtn.disabled = true;
+  aiBtn.textContent = '생각 중…';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/suggest-review`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, menu, rating: ratingEl.value ? Number(ratingEl.value) : null }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.review) throw new Error(data.error || 'AI 추천을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+    reviewEl.value = data.review;
+    reviewEl.focus();
+  } catch (err) {
+    msgEl.textContent = err instanceof TypeError ? '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.' : err.message;
+  } finally {
+    aiBtn.disabled = false;
+    aiBtn.textContent = 'AI 추천';
   }
 });
 
