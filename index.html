@@ -328,6 +328,11 @@
   .cm-box { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--divider); }
   .cm-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
   .cm-item { margin: 0; padding: 10px 14px; font-size: 13px; background: var(--surface); border-radius: 12px; word-break: break-word; }
+  .cm-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .cm-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .cm-by { color: var(--text-2); font-size: 12px; font-weight: 600; word-break: break-all; }
+  .cm-body { word-break: break-word; }
+  .cm-row .del { min-height: 28px; padding: 0 10px; font-size: 12px; }
   .cm-none { margin: 0 0 12px; color: var(--text-2); font-size: 13px; }
   .cm-form { display: flex; gap: 8px; }
   .cm-form input { flex: 1; min-width: 0; margin-top: 0; }
@@ -730,7 +735,32 @@ function renderComments(r, comments) {
 
   if (comments.length) {
     const ul = el('ul', 'cm-list');
-    ul.append(...comments.map((c) => el('li', 'cm-item', c.body)));
+    ul.append(
+      ...comments.map((c) => {
+        const item = el('li', 'cm-item cm-row');
+        const text = el('div', 'cm-text');
+        if (c.author) text.append(el('strong', 'cm-by', c.author)); // 작성자 아이디
+        text.append(el('span', 'cm-body', c.body));
+        item.append(text);
+        // 댓글 관리: 관리자만 지울 수 있다(서버도 다시 확인한다).
+        if (me.is_admin) {
+          const del = el('button', 'del', '삭제');
+          del.type = 'button';
+          del.setAttribute('aria-label', `${c.author || '작성자 미상'}의 댓글 삭제`);
+          del.addEventListener('click', async () => {
+            if (!confirm('이 댓글을 삭제할까요?')) return;
+            try {
+              await call('delete_comment', { id: c.id });
+              await refresh();
+            } catch (err) {
+              msg.textContent = err.message;
+            }
+          });
+          item.append(del);
+        }
+        return item;
+      }),
+    );
     box.append(ul);
   } else {
     box.append(el('p', 'cm-none', '아직 댓글이 없어요.'));

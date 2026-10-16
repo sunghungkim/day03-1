@@ -169,7 +169,7 @@ async function handle(input: Record<string, unknown>) {
     case 'list': {
       const [restaurants, comments, counts, mine] = await Promise.all([
         db.from('restaurants').select('*, members(username)').order('created_at', { ascending: false }),
-        db.from('comments').select('*').order('created_at', { ascending: true }),
+        db.from('comments').select('*, members(username)').order('created_at', { ascending: true }),
         db.from('reaction_counts').select('*'),
         db.from('reactions').select('restaurant_id, kind').eq('member_id', me.id),
       ]);
@@ -181,7 +181,12 @@ async function handle(input: Record<string, unknown>) {
         ...r,
         author: (Array.isArray(members) ? members[0] : members)?.username ?? null,
       }));
-      return { restaurants: list, comments: comments.data, counts: counts.data, myVotes };
+      // 댓글에도 작성자 아이디를 붙인다. 작성자 기록이 없는 예전 댓글은 author가 null이다.
+      const commentList = comments.data!.map(({ members, member_id: _memberId, ...c }) => ({
+        ...c,
+        author: (Array.isArray(members) ? members[0] : members)?.username ?? null,
+      }));
+      return { restaurants: list, comments: commentList, counts: counts.data, myVotes };
     }
 
     case 'add_restaurant': {
@@ -218,11 +223,20 @@ async function handle(input: Record<string, unknown>) {
       if (!UUID.test(restaurantId)) fail(400, '잘못된 요청이에요.');
       if (!body) fail(400, '댓글을 입력해 주세요.');
       if (len(body) > 100) fail(400, '댓글은 100자 이하로 써 주세요.');
-      const { error } = await db.from('comments').insert({ restaurant_id: restaurantId, body });
+      const { error } = await db.from('comments').insert({ restaurant_id: restaurantId, body, member_id: me.id });
       if (error) {
         if (error.code === '23503') fail(404, '이미 삭제된 맛집이에요.');
         throw error;
       }
+      return { ok: true };
+    }
+
+    case 'delete_comment': {
+      requireAdmin(me);
+      const id = str(input.id);
+      if (!UUID.test(id)) fail(400, '잘못된 요청이에요.');
+      const { error } = await db.from('comments').delete().eq('id', id);
+      if (error) throw error;
       return { ok: true };
     }
 
