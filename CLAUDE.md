@@ -21,6 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **저장소는 겹치지 않고 교체합니다.** 1단계는 localStorage를 쓰고, 2단계에서 Supabase로 바꿉니다. 두 곳의 필드 이름(`name`, `menu`, `rating`, `review`, `created_at`)을 같게 유지해, 교체할 때 불러오기·저장·삭제 함수만 고치면 되게 합니다.
 - **Supabase 표 `restaurants`**는 새로 만들고 기존 표는 건드리지 않습니다. 글자 수·별점 제한은 폼과 표의 CHECK 제약 양쪽에서 막습니다. 세부 규칙은 PRD.md 7.2를 따릅니다.
 - **댓글은 별도 표 `comments`**(`restaurant_id`는 CASCADE 외래키)에 저장하고, 화면은 목록과 댓글을 한 번씩 불러와 카드별로 묶습니다. 조회·추가 정책만 있습니다. 세부는 PRD.md 7.3.
+- **좋아요·싫어요는 `reactions` 표에 한 줄씩 추가**하고(수정 정책이 없어 카운터 컬럼을 올릴 수 없기 때문), 화면은 개수를 모아 둔 뷰 `reaction_counts`를 읽습니다. 한 카드에 한 번은 localStorage(`myVotes`)로만 지킵니다. 세부는 PRD.md 7.4.
 - **RLS를 켜고 `restaurants`에는 조회·추가·삭제 정책만 둡니다.** 수정은 범위 밖이라 수정 정책이 없는 것은 의도한 것입니다. 접근은 로그인 없이 익명으로 합니다.
 - **AI 한줄평은 Supabase Edge Function 1개를 거칩니다.** `verify_jwt`는 꺼 둡니다(로그인이 없어서 의도한 것입니다). 브라우저는 이 함수만 호출하고, 함수가 `openrouter/free` 모델로 OpenRouter를 호출합니다. 결과는 한국어 한 문장, 40자 이내이며 한줄평 칸에 채워집니다. 자동으로 등록하지 않습니다. 함수는 입력 길이와 별점을 검사하고 CORS를 처리합니다.
 - **비밀 값.** OpenRouter 키는 Supabase 프로젝트 Secrets에 `openrouter_api_key`로만 두고, 사용자가 Supabase 대시보드에서 직접 넣습니다. `index.html`에는 Supabase URL과 공개용(anon/publishable) 키만 둘 수 있고, 서비스 롤 키는 절대 넣지 않습니다.

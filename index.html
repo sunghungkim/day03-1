@@ -130,6 +130,19 @@
     border-radius: 8px;
   }
   .del:hover { color: var(--danger); border-color: var(--danger); }
+  .react { display: flex; gap: 8px; margin-top: 12px; }
+  .react button {
+    min-height: 36px;
+    padding: 0 12px;
+    color: var(--text);
+    font-size: 0.9rem;
+    background: #fff;
+    border: 1px solid #e3d3c3;
+    border-radius: 999px;
+  }
+  .react button:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+  .react button:disabled { cursor: default; opacity: 0.7; }
+  .react button.mine { opacity: 1; font-weight: 700; color: var(--accent-deep); background: var(--accent-soft); border-color: var(--accent); }
   .cm-toggle {
     margin-top: 12px;
     padding: 6px 0;
@@ -271,6 +284,37 @@ const commentStore = {
   },
 };
 
+const reactionStore = {
+  async counts() {
+    const res = await api('reaction_counts', '?select=*');
+    return res.json();
+  },
+  async add(restaurantId, kind) {
+    await api('reactions', '', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ restaurant_id: restaurantId, kind }),
+    });
+  },
+};
+
+// 로그인이 없어서 "한 카드에 한 번"은 이 브라우저에서만 지킨다(다른 브라우저에서는 또 누를 수 있다).
+const MY_VOTES_KEY = 'myVotes';
+function loadMyVotes() {
+  try {
+    return JSON.parse(localStorage.getItem(MY_VOTES_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+function saveMyVote(id, kind) {
+  try {
+    localStorage.setItem(MY_VOTES_KEY, JSON.stringify({ ...loadMyVotes(), [id]: kind }));
+  } catch {
+    /* 저장이 막힌 브라우저에서는 새로고침하면 다시 누를 수 있다 */
+  }
+}
+
 const openComments = new Set(); // 펼쳐 둔 카드 id. 목록을 다시 그려도 유지한다.
 
 const $ = (id) => document.getElementById(id);
@@ -289,6 +333,35 @@ function el(tag, className, text) {
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+function renderReactions(r, count) {
+  const mine = loadMyVotes()[r.id];
+  const box = el('div', 'react');
+  const msg = el('span', 'cm-msg');
+  msg.setAttribute('role', 'alert');
+
+  const make = (kind, label, n) => {
+    const b = el('button', kind === mine ? 'mine' : '', `${label} ${n}`);
+    b.type = 'button';
+    b.setAttribute('aria-label', `${r.name} ${kind === 'like' ? '좋아요' : '싫어요'} ${n}`);
+    b.disabled = Boolean(mine);
+    b.addEventListener('click', async () => {
+      box.querySelectorAll('button').forEach((x) => (x.disabled = true));
+      try {
+        await reactionStore.add(r.id, kind);
+        saveMyVote(r.id, kind);
+        await refresh();
+      } catch (err) {
+        msg.textContent = err.message;
+        box.querySelectorAll('button').forEach((x) => (x.disabled = false));
+      }
+    });
+    return b;
+  };
+
+  box.append(make('like', '👍 좋아요', count.likes), make('dislike', '👎 싫어요', count.dislikes), msg);
+  return box;
 }
 
 function renderComments(r, comments) {
@@ -348,7 +421,7 @@ function renderComments(r, comments) {
   return wrap;
 }
 
-function renderCard(r, comments = []) {
+function renderCard(r, comments = [], count = { likes: 0, dislikes: 0 }) {
   const rating = Math.min(5, Math.max(1, r.rating));
   const li = el('li', 'card');
 
@@ -376,16 +449,23 @@ function renderCard(r, comments = []) {
   li.append(top);
   if (r.menu) li.append(el('span', 'menu', r.menu));
   if (r.review) li.append(el('p', 'review', r.review));
-  li.append(renderComments(r, comments));
+  li.append(renderReactions(r, count), renderComments(r, comments));
   return li;
 }
 
 async function refresh() {
-  // 댓글을 못 불러와도 맛집 목록은 보여 준다.
-  const [items, comments] = await Promise.all([store.list(), commentStore.list().catch(() => [])]);
+  // 댓글·좋아요를 못 불러와도 맛집 목록은 보여 준다.
+  const [items, comments, counts] = await Promise.all([
+    store.list(),
+    commentStore.list().catch(() => []),
+    reactionStore.counts().catch(() => []),
+  ]);
   const byRestaurant = new Map();
   for (const c of comments) byRestaurant.set(c.restaurant_id, [...(byRestaurant.get(c.restaurant_id) || []), c]);
-  listEl.replaceChildren(...items.map((r) => renderCard(r, byRestaurant.get(r.id) || [])));
+  const countById = new Map(counts.map((c) => [c.restaurant_id, { likes: Number(c.likes), dislikes: Number(c.dislikes) }]));
+  listEl.replaceChildren(
+    ...items.map((r) => renderCard(r, byRestaurant.get(r.id) || [], countById.get(r.id) || { likes: 0, dislikes: 0 })),
+  );
   emptyEl.hidden = items.length > 0;
   countEl.textContent = items.length ? `${items.length}곳` : '';
 }
