@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 현황
 
-아직 문서만 있고 코드는 없습니다. 우리 동네 숨은 맛집을 기록하고 동네 사람들과 함께 보는 한국어 웹앱을 만들 예정입니다.
+우리 동네 숨은 맛집을 기록하고 동네 사람들과 함께 보는 한국어 웹앱입니다. 1~2단계가 끝나 `index.html`이 Supabase(프로젝트 `day03-1`, 표 `restaurants`)에 저장합니다. 3단계(AI 한줄평)부터 남았습니다.
 
 - `PRD.md`가 요구사항, 데이터 규칙, 권한, 완료 기준의 기준 문서입니다.
 - `STEPS.md`가 만드는 순서입니다: 맛집 기록(localStorage) → Supabase 저장 → AI 한줄평 → 배포. 한 단계를 끝내고 확인한 뒤 다음 단계로 가고, 단계마다 커밋합니다.
