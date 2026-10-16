@@ -30,6 +30,8 @@
 
   header h1 { margin: 0; font-size: 1.7rem; letter-spacing: -0.02em; }
   header h1 span { color: var(--accent-strong); }
+  header h1[role="button"] { cursor: pointer; width: fit-content; }
+  header h1[role="button"]:hover { opacity: 0.8; }
   header p { margin: 6px 0 0; color: var(--muted); }
 
   .panel {
@@ -247,7 +249,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>우리 동네 <span>숨은 맛집</span></h1>
+    <h1 id="banner">우리 동네 <span>숨은 맛집</span></h1>
     <p>가본 맛집을 기록하고 동네 사람들과 함께 봐요.</p>
   </header>
 
@@ -411,7 +413,22 @@ const authView = $('authView');
 const appView = $('appView');
 const authMsg = $('authMsg');
 
+// 관리자 모드에서는 제목을 누르면 처음 화면(로그인)으로 돌아간다. 로그아웃과 같다.
+const banner = $('banner');
+function setBannerLink(on) {
+  if (on) {
+    banner.setAttribute('role', 'button');
+    banner.tabIndex = 0;
+    banner.title = '처음 화면(로그인)으로 돌아가기';
+  } else {
+    banner.removeAttribute('role');
+    banner.removeAttribute('tabindex');
+    banner.removeAttribute('title');
+  }
+}
+
 function showAuth(message = '') {
+  setBannerLink(false);
   appView.hidden = true;
   authView.hidden = false;
   authMsg.textContent = message;
@@ -427,6 +444,7 @@ function showApp() {
   if (me.is_admin) who.append(el('span', 'badge', '관리자'));
   $('membersBtn').hidden = !me.is_admin;
   $('adminPanel').hidden = true;
+  setBannerLink(me.is_admin);
 }
 
 function endSession(message) {
@@ -481,10 +499,20 @@ $('authForm').addEventListener('submit', async (e) => {
   }
 });
 
-$('logoutBtn').addEventListener('click', async () => {
+function logout() {
   call('logout').catch(() => {});
   endSession('');
   setMode('login');
+}
+$('logoutBtn').addEventListener('click', logout);
+banner.addEventListener('click', () => {
+  if (me && me.is_admin) logout();
+});
+banner.addEventListener('keydown', (e) => {
+  if ((e.key === 'Enter' || e.key === ' ') && me && me.is_admin) {
+    e.preventDefault();
+    logout();
+  }
 });
 
 // ---------- 맛집 목록 ----------
